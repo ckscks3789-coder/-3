@@ -1,0 +1,58 @@
+# GitHub Pages에 Vite 프로젝트를 배포하기 위한 설정
+name: Deploy Vite Project to Pages
+
+on:
+  # 'main' 브랜치에 코드가 push될 때마다 실행
+  push:
+    branches: ['main']
+  # Actions 탭에서 수동으로 실행 가능
+  workflow_dispatch:
+
+# 배포 권한 설정
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 동시 배포 설정
+concurrency:
+  group: 'pages'
+  cancel-in-progress: false
+
+jobs:
+  # 빌드 작업
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20' # Node.js 20 버전을 사용
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm install
+      - name: Build
+        # ★★★ 가장 중요한 부분 ★★★
+        # 우리 저장소 이름이 'clocks3789-coder-3'이므로, base 경로를 설정해줍니다.
+        run: npm run build -- --base=/clocks3789-coder-3/
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          # 'dist' 폴더에 있는 빌드 결과물을 업로드
+          path: './dist'
+
+  # 배포 작업
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
